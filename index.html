@@ -1609,9 +1609,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function nextQuestion() {
     if (!session) return;
-    if (!answered) {
-      const msg = selected.size ? '本题已选择但还未提交，确定跳过吗？' : '本题还未作答，确定跳到下一题吗？';
-      if (!confirm(msg)) return;
+    if (!answered && selected.size) {
+      if (!confirm('本题已选择但还未提交，确定跳过吗？')) return;
     }
     if (session.index >= session.pool.length - 1) {
       renderResult();
