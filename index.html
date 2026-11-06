@@ -382,11 +382,15 @@ main {
 .overview-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .overview-head h3 { margin: 0; font-size: 18px; }
 .overview-head .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.overview-head-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .overview-legend { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
 .overview-legend span { display: inline-flex; align-items: center; gap: 4px; }
 .overview-legend i { font-style: normal; font-weight: 900; }
 .overview-legend .ok { color: var(--green); }
 .overview-legend .bad { color: var(--red); }
+.overview-summary { display: flex; align-items: baseline; gap: 5px; margin: 4px 0 12px; color: var(--muted); font-size: 13px; }
+.overview-summary b { font-size: 22px; color: var(--text); line-height: 1; }
+.overview-summary em { font-style: normal; margin-left: 6px; }
 .overview-group { margin-top: 14px; }
 .overview-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
 .overview-group-head b { font-size: 14px; }
@@ -394,35 +398,63 @@ main {
 .overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; }
 .q-card {
   position: relative;
-  min-height: 48px;
-  border: 1px solid var(--line);
+  min-height: 52px;
+  border: 1.5px solid #93c5fd;
   background: #fff;
-  color: var(--text);
+  color: #2563eb;
   border-radius: 10px;
   font: inherit;
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
-  transition: transform .13s ease, border-color .13s ease, background .13s ease;
+  transition: transform .13s ease, border-color .13s ease, background .13s ease, box-shadow .13s ease;
 }
-.q-card:hover { transform: translateY(-1px); border-color: #93c5fd; }
-.q-card .q-num { font-size: 14px; }
+.q-card:hover { transform: translateY(-1px); border-color: #60a5fa; background: #f8fbff; }
+.q-card .q-num { font-size: 15px; line-height: 1; }
 .q-card .q-status {
   position: absolute;
-  right: 5px;
-  bottom: 3px;
-  font-size: 13px;
+  right: 4px;
+  bottom: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #cbd5e1;
+  color: #fff;
+  border: 1px solid #fff;
+  font-size: 11px;
   line-height: 1;
   font-weight: 900;
 }
-.q-card.correct { border-color: #86efac; background: var(--green-soft); }
-.q-card.correct .q-status { color: var(--green); }
-.q-card.wrong { border-color: #fca5a5; background: var(--red-soft); }
-.q-card.wrong .q-status { color: var(--red); }
-.q-card.unanswered { background: #f8fafc; color: var(--muted); }
-.q-card.unanswered .q-status { color: #cbd5e1; }
-.q-card.correct:hover { border-color: #22c55e; }
-.q-card.wrong:hover { border-color: #ef4444; }
+.q-card.correct { border-color: #93c5fd; background: #fff; }
+.q-card.correct .q-status { background: #22c55e; color: #fff; }
+.q-card.wrong { border-color: #93c5fd; background: #fff; }
+.q-card.wrong .q-status { background: #ef4444; color: #fff; }
+.q-card.unanswered { background: #f8fafc; color: #64748b; border-color: #cbd5e1; }
+.q-card.unanswered .q-status { display: none; }
+.q-card.current { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .28); }
 .overview-tip { color: var(--muted); font-size: 12px; margin-top: 10px; }
+
+.quiz-overview {
+  padding: 0;
+  margin-bottom: 12px;
+  max-height: 68vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-margin-top: 86px;
+}
+.quiz-overview #quizOverviewBody { padding: 16px; }
+.quiz-overview .overview { margin-top: 0; border-top: 0; padding-top: 0; }
+.quiz-overview .overview-head {
+  position: sticky;
+  top: -16px;
+  z-index: 2;
+  padding: 16px 0 8px;
+  margin: -16px 0 8px;
+  background: var(--card);
+}
+.quiz-overview .overview-head h3 { font-size: 17px; }
+.quiz-overview .overview-group { margin-top: 12px; }
 
 .result-card { padding: 26px; }
 .result-card h2 { margin: 0 0 8px; }
@@ -610,6 +642,7 @@ main {
   main { padding: 14px 12px 50px; }
   .resume-bar { flex-direction: column; align-items: flex-start; }
   .resume-bar .btn { width: 100%; }
+  .quiz-overview { max-height: 60vh; }
   .topbar-inner { padding: 9px 12px; }
   .brand { font-size: 16px; }
   .brand .logo { width: 30px; height: 30px; font-size: 16px; }
@@ -678,15 +711,17 @@ main {
   .feedback.wrong { background: #450a0a; border-color: #991b1b; }
   .answer-line, .explanation p { color: #cbd5e1; }
   .progress { background: #1e293b; }
-  .list-item, .wrong-item, .bank-row, .q-card { background: #0f172a; border-color: var(--line); }
+  .list-item, .wrong-item, .bank-row { background: #0f172a; border-color: var(--line); }
   .bank-row.active { background: #172554; border-color: #1d4ed8; }
-  .q-card { color: var(--text); }
-  .q-card.correct { background: #052e16; border-color: #22c55e; color: #bbf7d0; }
-  .q-card.wrong { background: #450a0a; border-color: #ef4444; color: #fecaca; }
-  .q-card.unanswered { background: #111827; color: #94a3b8; }
-  .q-card.correct .q-status { color: #4ade80; }
-  .q-card.wrong .q-status { color: #f87171; }
-  .q-card.unanswered .q-status { color: #64748b; }
+  .q-card { background: #0f172a; border-color: #3b82f6; color: #93c5fd; }
+  .q-card:hover { background: #172033; border-color: #60a5fa; }
+  .q-card.correct { background: #0f172a; border-color: #3b82f6; color: #93c5fd; }
+  .q-card.wrong { background: #0f172a; border-color: #3b82f6; color: #93c5fd; }
+  .q-card.unanswered { background: #111827; color: #94a3b8; border-color: #334155; }
+  .q-card.correct .q-status { background: #22c55e; color: #fff; }
+  .q-card.wrong .q-status { background: #ef4444; color: #fff; }
+  .q-card.unanswered .q-status { background: #475569; color: #e2e8f0; }
+  .q-card.current { border-color: #60a5fa; box-shadow: 0 0 0 2px rgba(96, 165, 250, .35); }
   .overview { border-top-color: var(--line); }
   .modal { background: #111827; color: var(--text); }
   .modal-close { background: #1e293b; color: #cbd5e1; }
@@ -795,7 +830,12 @@ main {
       <button class="btn ghost" id="btnQuit">← 退出</button>
       <div class="progress"><i id="progressBar"></i></div>
       <div class="quiz-counter" id="quizCounter">1 / 1</div>
+      <button class="icon-btn" id="btnOverview" title="答题卡" aria-label="答题卡">▦</button>
       <button class="icon-btn" id="btnFavQuiz" title="收藏本题">☆</button>
+    </div>
+
+    <div class="card quiz-overview" id="quizOverview" hidden>
+      <div id="quizOverviewBody"></div>
     </div>
 
     <div class="card question-card">
@@ -1572,6 +1612,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     };
     savedSession = session;
     saveSession();
+    const panel = $('#quizOverview');
+    if (panel) panel.hidden = true;
+    const overviewBtn = $('#btnOverview');
+    if (overviewBtn) overviewBtn.classList.remove('active');
     showView('quiz');
     renderQuestion();
   }
@@ -1636,6 +1680,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     document.title = `${q.chapter} · ${typeName(q.type)} · 刷题器`;
 
     if (answered) applyAnswerDisplay(q, saved.user, saved.correct);
+    renderQuizOverview();
   }
 
   function toggleOption(key) {
@@ -1702,6 +1747,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     recordAttempt(q, user, correct);
     saveSession();
     applyAnswerDisplay(q, user, correct);
+    renderQuizOverview();
     $('#btnNext').focus();
   }
 
@@ -1778,13 +1824,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     renderResultOverview();
   }
 
-  function renderResultOverview() {
-    const el = $('#resultOverview');
-    if (!el) return;
-    if (!session || !session.pool.length) {
-      el.innerHTML = '';
-      return;
-    }
+  function buildOverviewHtml(opts) {
+    const options = opts || {};
+    if (!session || !session.pool.length) return '';
     const defs = [
       { type: 'single', name: '单选题' },
       { type: 'multi', name: '多选题' },
@@ -1798,6 +1840,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         return { ...d, items };
       })
       .filter((g) => g.items.length);
+
+    const total = session.pool.length;
+    const correctCount = session.pool.filter((q, index) => session.answersByIndex[index] && session.answersByIndex[index].correct).length;
+    const score = total ? Math.round((correctCount / total) * 100) : 0;
 
     const legend = `
       <div class="overview-legend">
@@ -1813,14 +1859,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           .map((x) => {
             const rec = session.answersByIndex[x.index];
             let cls = 'unanswered';
-            let icon = '–';
+            let icon = '';
             let status = '未作答';
             if (rec) {
               cls = rec.correct ? 'correct' : 'wrong';
               icon = rec.correct ? '✓' : '✕';
               status = rec.correct ? '答对' : '答错';
             }
-            return `<button class="q-card ${cls}" data-overview-index="${x.index}" title="第 ${x.index + 1} 题 · ${status}"><span class="q-num">${x.index + 1}</span><span class="q-status">${icon}</span></button>`;
+            const current = opts.currentIndex === x.index ? ' current' : '';
+            return `<button class="q-card ${cls}${current}" data-overview-index="${x.index}" title="第 ${x.index + 1} 题 · ${status}"><span class="q-num">${x.index + 1}</span><span class="q-status">${icon}</span></button>`;
           })
           .join('');
         return `
@@ -1831,18 +1878,65 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       })
       .join('');
 
-    el.innerHTML = `
+    return `
       <div class="overview-head">
-        <div><h3>答题概览</h3><div class="sub">点击题号查看本题答案与解析</div></div>
-        ${legend}
+        <div><h3>${opts.title || '答题概览'}</h3><div class="sub">${opts.sub || '点击题号查看本题答案与解析'}</div></div>
+        <div class="overview-head-right">${legend}${opts.action || ''}</div>
       </div>
+      <div class="overview-summary"><span>客观题</span><b>${score}</b><span>/100分</span><em>共${total}题</em></div>
       ${groupHtml || '<div class="empty" style="padding:16px 0">暂无可统计的题目。</div>'}
-      <div class="overview-tip">绿色 ✓ 表示答对，红色 ✕ 表示答错，灰色 – 表示未作答。</div>
+      <div class="overview-tip">${opts.tip || '绿色 ✓ 表示答对，红色 ✕ 表示答错，灰色 – 表示未作答。'}</div>
     `;
+  }
 
-    el.querySelectorAll('[data-overview-index]').forEach((btn) => {
-      btn.onclick = () => openOverviewDetail(Number(btn.dataset.overviewIndex));
+  function bindOverviewCards(container, handler) {
+    container.querySelectorAll('[data-overview-index]').forEach((btn) => {
+      btn.onclick = () => handler(Number(btn.dataset.overviewIndex));
     });
+  }
+
+  function renderResultOverview() {
+    const el = $('#resultOverview');
+    if (!el) return;
+    el.innerHTML = buildOverviewHtml();
+    bindOverviewCards(el, openOverviewDetail);
+  }
+
+  function renderQuizOverview() {
+    const panel = $('#quizOverview');
+    const body = $('#quizOverviewBody');
+    if (!panel || !body || panel.hidden || !session) return;
+    body.innerHTML = buildOverviewHtml({
+      title: '答题卡',
+      sub: '点击题号跳转到该题',
+      tip: '点击“收起”或右上角答题卡按钮可收起。',
+      currentIndex: session.index,
+      action: '<button class="link-btn" id="btnOverviewClose">收起 ↑</button>',
+    });
+    bindOverviewCards(body, jumpToQuestion);
+    const close = $('#btnOverviewClose');
+    if (close) close.onclick = toggleQuizOverview;
+  }
+
+  function toggleQuizOverview() {
+    const panel = $('#quizOverview');
+    if (!panel || !session) return;
+    panel.hidden = !panel.hidden;
+    $('#btnOverview').classList.toggle('active', !panel.hidden);
+    if (!panel.hidden) {
+      renderQuizOverview();
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+
+  function jumpToQuestion(index) {
+    if (!session || !session.pool[index]) return;
+    session.index = index;
+    saveSession();
+    $('#quizOverview').hidden = true;
+    $('#btnOverview').classList.remove('active');
+    renderQuestion();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function openOverviewDetail(index) {
@@ -2267,6 +2361,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $('#btnFavList').onclick = () => showView('favorites');
     $('#btnWrongList').onclick = () => showView('wrong');
     $('#btnQuit').onclick = quitQuiz;
+    $('#btnOverview').onclick = toggleQuizOverview;
     $('#btnResume').onclick = () => {
       if (!savedSession || savedSession.finished) return;
       session = savedSession;
