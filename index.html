@@ -177,6 +177,22 @@ main {
 .action-card.primary .sub { color: rgba(255,255,255,.82); }
 .action-card:disabled { opacity: .45; cursor: not-allowed; transform: none; }
 
+.resume-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 14px 0 4px;
+  padding: 14px 16px;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+}
+.resume-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.resume-info b { font-size: 15px; }
+.resume-info span { color: var(--muted); font-size: 12px; }
+.resume-bar .btn { flex-shrink: 0; }
+
 .quick-links { display: flex; gap: 16px; margin: -4px 2px 12px; flex-wrap: wrap; }
 .link-btn {
   border: 0;
@@ -320,6 +336,17 @@ main {
   margin-top: 1px;
 }
 .option.selected { border-color: var(--accent); background: var(--accent-soft); }
+.option.selected::before {
+  content: "";
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, .72);
+  margin-top: 9px;
+}
+.option.judge.selected::before { margin-top: 0; }
 .option.selected .key { background: var(--accent); border-color: var(--accent); color: #fff; }
 .option.correct { border-color: #86efac; background: var(--green-soft); }
 .option.correct .key { background: var(--green); border-color: var(--green); color: #fff; }
@@ -535,6 +562,8 @@ main {
 }
 @media (max-width: 560px) {
   main { padding: 14px 12px 50px; }
+  .resume-bar { flex-direction: column; align-items: flex-start; }
+  .resume-bar .btn { width: 100%; }
   .topbar-inner { padding: 9px 12px; }
   .brand { font-size: 16px; }
   .brand .logo { width: 30px; height: 30px; font-size: 16px; }
@@ -583,6 +612,14 @@ main {
       </div>
     </div>
 
+    <div class="resume-bar" id="resumeBar" hidden>
+      <div class="resume-info">
+        <b>继续上次刷题</b>
+        <span id="resumeMeta"></span>
+      </div>
+      <button class="btn primary" id="btnResume">继续刷题 →</button>
+    </div>
+
     <div class="grid">
       <button class="action-card primary" id="btnStart">
         <span class="title">开始刷题</span>
@@ -620,7 +657,7 @@ main {
         </select>
       </label>
       <label class="switch"><input type="checkbox" id="shuffle"> 随机顺序</label>
-      <span style="color:#94a3b8;font-size:12px;margin-left:auto">快捷键：A–D 选择，Enter 提交，F 收藏</span>
+      <span style="color:#94a3b8;font-size:12px;margin-left:auto">快捷键：A–E 选择，←/→ 上/下一题，Enter 提交，F 收藏</span>
     </div>
 
     <div class="empty" id="emptyState">
@@ -655,8 +692,9 @@ main {
       <div class="options" id="qOptions"></div>
       <div class="feedback" id="qFeedback" hidden></div>
       <div class="quiz-actions">
+        <button class="btn" id="btnPrev" disabled>← 上一题</button>
         <button class="btn primary" id="btnSubmit" disabled>提交答案</button>
-        <button class="btn" id="btnNext" hidden>下一题 →</button>
+        <button class="btn" id="btnNext">下一题 →</button>
       </div>
     </div>
     <div class="footer-note">答错会自动进入错题本；点右上角 ☆ 可收藏本题。</div>
@@ -1057,11 +1095,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   'use strict';
 
   const STORAGE_KEY = 'quizbank_single_v1';
+  const SESSION_KEY = 'quizbank_session_v1';
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
   let state = loadState();
   let session = null;
+  let savedSession = null;
   let selected = new Set();
   let answered = false;
   let currentView = 'home';
@@ -1105,6 +1145,78 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     } catch (e) {
       toast('保存失败：浏览器存储空间不足，请先导出备份并清理旧题库。', 'bad');
     }
+  }
+
+  function saveSession() {
+    if (!session) return;
+    try {
+      const data = {
+        bankId: session.bankId,
+        mode: session.mode,
+        label: session.label,
+        index: session.index,
+        poolIds: session.pool.map((q) => q.id),
+        answers: session.answersByIndex || {},
+        drafts: session.drafts || {},
+        startedAt: session.startedAt,
+        finished: !!session.finished,
+        updatedAt: Date.now(),
+      };
+      localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+    } catch (e) {
+      console.warn('保存刷题进度失败', e);
+    }
+  }
+
+  function loadSavedSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      const data = JSON.parse(raw);
+      if (!data || !data.bankId || !Array.isArray(data.poolIds)) return null;
+      const bank = state.banks.find((b) => b.id === data.bankId);
+      if (!bank) return null;
+      const byId = new Map(bank.questions.map((q) => [q.id, q]));
+      const pool = data.poolIds.map((id) => byId.get(id)).filter(Boolean);
+      if (!pool.length) return null;
+      const answers = {};
+      Object.keys(data.answers || {}).forEach((k) => {
+        const i = Number(k);
+        if (Number.isInteger(i) && i >= 0 && i < pool.length) answers[i] = data.answers[k];
+      });
+      const drafts = {};
+      Object.keys(data.drafts || {}).forEach((k) => {
+        const i = Number(k);
+        if (Number.isInteger(i) && i >= 0 && i < pool.length) drafts[i] = data.drafts[k];
+      });
+      const results = Object.keys(answers)
+        .map(Number)
+        .sort((a, b) => a - b)
+        .map((i) => ({ q: pool[i], user: answers[i].user, correct: !!answers[i].correct }));
+      return {
+        bankId: data.bankId,
+        mode: data.mode || 'all',
+        label: data.label || '刷题',
+        pool,
+        index: Math.max(0, Math.min(Number(data.index) || 0, pool.length - 1)),
+        answersByIndex: answers,
+        drafts,
+        results,
+        startedAt: data.startedAt || Date.now(),
+        finished: !!data.finished,
+        updatedAt: data.updatedAt || Date.now(),
+      };
+    } catch (e) {
+      console.warn('读取刷题进度失败', e);
+      return null;
+    }
+  }
+
+  function clearSavedSession() {
+    savedSession = null;
+    try {
+      localStorage.removeItem(SESSION_KEY);
+    } catch (e) {}
   }
 
   function uid() {
@@ -1276,10 +1388,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     typeSel.value = oldType || '';
   }
 
+  function renderResumeBar() {
+    const bar = $('#resumeBar');
+    if (!bar) return;
+    const bank = activeBank();
+    const ok = savedSession && !savedSession.finished && bank && savedSession.bankId === bank.id && savedSession.pool.length;
+    bar.hidden = !ok;
+    if (!ok) return;
+    $('#resumeMeta').textContent = `第 ${savedSession.index + 1} / ${savedSession.pool.length} 题 · ${savedSession.label || '刷题'}`;
+  }
+
   function renderHome() {
     renderHeader();
     updateStats();
     fillFilters();
+    renderResumeBar();
     const bank = activeBank();
     const has = !!(bank && bank.questions.length);
     $('#btnStart').disabled = !has;
@@ -1318,7 +1441,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       toast('没有可刷的题目，请检查筛选条件。', 'bad');
       return;
     }
-    session = { pool, index: 0, results: [], mode: mode || 'all', label: label || '刷题', startedAt: Date.now() };
+    const bank = activeBank();
+    session = {
+      bankId: bank ? bank.id : null,
+      pool,
+      index: 0,
+      results: [],
+      answersByIndex: {},
+      drafts: {},
+      mode: mode || 'all',
+      label: label || '刷题',
+      startedAt: Date.now(),
+      finished: false,
+    };
+    savedSession = session;
+    saveSession();
     showView('quiz');
     renderQuestion();
   }
@@ -1336,8 +1473,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       return;
     }
     const q = session.pool[session.index];
-    selected = new Set();
-    answered = false;
+    const saved = session.answersByIndex[session.index];
+    const draft = session.drafts[session.index];
+    selected = new Set(saved ? saved.user : draft || []);
+    answered = !!saved;
+
     $('#qChapter').textContent = q.chapter;
     $('#qType').textContent = typeName(q.type);
     $('#qType').className = 'pill gray';
@@ -1347,9 +1487,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $('#qFeedback').hidden = true;
     $('#qFeedback').className = 'feedback';
     $('#btnSubmit').hidden = false;
-    $('#btnSubmit').disabled = true;
-    $('#btnNext').hidden = true;
+    $('#btnSubmit').disabled = selected.size === 0;
+    $('#btnNext').hidden = false;
     $('#btnNext').textContent = session.index === session.pool.length - 1 ? '查看结果 →' : '下一题 →';
+    $('#btnPrev').disabled = session.index === 0;
     renderFavoriteButtons(q.id);
 
     const opts = $('#qOptions');
@@ -1370,15 +1511,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     opts.querySelectorAll('.option').forEach((btn) => {
       btn.addEventListener('click', () => toggleOption(btn.dataset.key));
+      btn.classList.toggle('selected', selected.has(btn.dataset.key));
     });
     $('#btnSubmit').onclick = submitAnswer;
+    $('#btnPrev').onclick = prevQuestion;
     $('#btnNext').onclick = nextQuestion;
     $('#btnFavQuiz').onclick = () => toggleFavorite(q.id);
     document.title = `${q.chapter} · ${typeName(q.type)} · 刷题器`;
+
+    if (answered) applyAnswerDisplay(q, saved.user, saved.correct);
   }
 
   function toggleOption(key) {
-    if (answered) return;
+    if (answered || !session) return;
     const q = session.pool[session.index];
     if (q.type === 'multi') {
       if (selected.has(key)) selected.delete(key);
@@ -1389,20 +1534,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $$('#qOptions .option').forEach((btn) => {
       btn.classList.toggle('selected', selected.has(btn.dataset.key));
     });
+    session.drafts[session.index] = Array.from(selected);
+    saveSession();
     $('#btnSubmit').disabled = selected.size === 0;
   }
 
-  function submitAnswer() {
-    if (answered || !selected.size) return;
-    const q = session.pool[session.index];
-    const user = Array.from(selected).sort();
-    const correct = sameSet(user, q.answer);
+  function applyAnswerDisplay(q, user, correct) {
     answered = true;
-
+    selected = new Set(user);
     $$('#qOptions .option').forEach((btn) => {
       const key = btn.dataset.key;
       btn.disabled = true;
-      btn.classList.remove('selected');
+      btn.classList.toggle('selected', user.includes(key));
+      btn.classList.remove('correct', 'wrong', 'missed');
       if (q.answer.includes(key)) {
         btn.classList.add('correct');
         if (!user.includes(key)) btn.classList.add('missed');
@@ -1428,9 +1572,20 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $('#btnFavFeedback').onclick = () => toggleFavorite(q.id);
     $('#btnSubmit').hidden = true;
     $('#btnNext').hidden = false;
+    $('#btnNext').textContent = session.index === session.pool.length - 1 ? '查看结果 →' : '下一题 →';
+  }
 
+  function submitAnswer() {
+    if (answered || !selected.size || !session) return;
+    const q = session.pool[session.index];
+    const user = Array.from(selected).sort();
+    const correct = sameSet(user, q.answer);
+    session.answersByIndex[session.index] = { user, correct };
+    delete session.drafts[session.index];
     session.results.push({ q, user, correct });
     recordAttempt(q, user, correct);
+    saveSession();
+    applyAnswerDisplay(q, user, correct);
     $('#btnNext').focus();
   }
 
@@ -1445,17 +1600,34 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     saveState();
   }
 
+  function prevQuestion() {
+    if (!session || session.index <= 0) return;
+    session.index--;
+    saveSession();
+    renderQuestion();
+  }
+
   function nextQuestion() {
     if (!session) return;
+    if (!answered) {
+      const msg = selected.size ? '本题已选择但还未提交，确定跳过吗？' : '本题还未作答，确定跳到下一题吗？';
+      if (!confirm(msg)) return;
+    }
     if (session.index >= session.pool.length - 1) {
       renderResult();
     } else {
       session.index++;
+      saveSession();
       renderQuestion();
     }
   }
 
   function renderResult() {
+    if (session) {
+      session.finished = true;
+      savedSession = session;
+      saveSession();
+    }
     showView('result');
     const total = session.results.length;
     const correct = session.results.filter((r) => r.correct).length;
@@ -1770,6 +1942,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           settings: Object.assign(defaultState().settings, data.settings || {}),
         });
         saveState();
+        clearSavedSession();
         showView('home');
         toast('备份已恢复', 'good');
       } catch (e) {
@@ -1787,6 +1960,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!confirm('确定清空所有题库、收藏和答题记录吗？此操作不可恢复，建议先导出备份。')) return;
     if (!confirm('再次确认：真的要清空全部数据吗？')) return;
     localStorage.removeItem(STORAGE_KEY);
+    clearSavedSession();
     state = defaultState();
     showView('home');
     toast('已清空全部数据');
@@ -1855,7 +2029,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function quitQuiz() {
-    if (session && session.results.length && !confirm('退出本轮刷题？已答题目记录会保留。')) return;
+    if (session) saveSession();
+    const hasWork = session && (session.results.length || Object.keys(session.drafts || {}).length);
+    if (hasWork && !confirm('退出本轮刷题？进度已保存，下次可从首页继续。')) return;
     session = null;
     showView('home');
   }
@@ -1880,6 +2056,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $('#btnFavList').onclick = () => showView('favorites');
     $('#btnWrongList').onclick = () => showView('wrong');
     $('#btnQuit').onclick = quitQuiz;
+    $('#btnResume').onclick = () => {
+      if (!savedSession || savedSession.finished) return;
+      session = savedSession;
+      showView('quiz');
+      renderQuestion();
+    };
     $('#btnFavQuiz').onclick = () => {
       if (session && session.pool[session.index]) toggleFavorite(session.pool[session.index].id);
     };
@@ -1889,6 +2071,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       if (!session) return;
       session.index = 0;
       session.results = [];
+      session.answersByIndex = {};
+      session.drafts = {};
+      session.finished = false;
+      savedSession = session;
+      saveSession();
       showView('quiz');
       renderQuestion();
     };
@@ -1936,8 +2123,18 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         quitQuiz();
         return;
       }
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevQuestion();
+        return;
+      }
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        nextQuestion();
+        return;
+      }
       if (answered) {
-        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowRight') {
+        if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           nextQuestion();
         }
@@ -1974,6 +2171,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function init() {
     bindEvents();
+    savedSession = loadSavedSession();
     const params = new URLSearchParams(location.search);
     if (!state.banks.length && params.get('demo') === '1') {
       loadDemo();
