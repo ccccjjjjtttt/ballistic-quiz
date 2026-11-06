@@ -886,7 +886,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const s = String(raw).trim();
     if (/^(√|对|正确|是|T|TRUE)$/i.test(s)) return { answer: ['T'], judge: true };
     if (/^(×|错|错误|否|F|FALSE)$/i.test(s)) return { answer: ['F'], judge: true };
-    const letters = Array.from(new Set((s.toUpperCase().match(/[A-D]/g) || []))).sort();
+    const letters = Array.from(new Set((s.toUpperCase().match(/[A-E]/g) || []))).sort();
     return { answer: letters, judge: false };
   }
 
@@ -901,9 +901,9 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const chapterRe = /^第\s*\d+\s*章/;
     const sectionRe = /^[一二三四五六七八九十]+\s*、\s*(单选题|多选题|判断题|选择题|填空题|简答题)/;
     const questionRe = /^(\d+)\s*[.．、]\s*(.*)$/;
-    const optionRe = /^([A-D])\s*[.．、]\s*(.*)$/;
+    const optionRe = /^([A-E])\s*[.．、]\s*(.*)$/;
     const answerRe = /^答案\s*[：:]\s*\[([^\]]+)\]\s*[　\s]*解析\s*[：:]\s*([\s\S]*)$/;
-    const answerOnlyRe = /^答案\s*[：:]\s*(\[[^\]]+\]|[A-D√×对错]+)\s*$/;
+    const answerOnlyRe = /^答案\s*[：:]\s*(\[[^\]]+\]|[A-E√×对错]+)\s*$/;
     const explanationRe = /^解析\s*[：:]\s*([\s\S]*)$/;
 
     function sectionType(sec) {
@@ -972,13 +972,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       let line = String(raw).replace(/\u00a0/g, ' ').trim();
       if (!line) continue;
 
-      if (chapterRe.test(line) || line === '其它') {
+      if (chapterRe.test(line) || line === '其它' || line === '其他' || line === '单元检测') {
         finish();
         chapter = line;
         section = '';
         continue;
       }
-      if (!current && chapter === '未分类' && /(题库|复习题|练习题|试卷)$/.test(line)) {
+      if (!current && chapter === '未分类' && /(题库|复习题|练习题|试卷)/.test(line)) {
         continue;
       }
       if (sectionRe.test(line)) {
@@ -1964,7 +1964,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         }
         return;
       }
-      const map = { a: 'A', b: 'B', c: 'C', d: 'D', 1: 'A', 2: 'B', 3: 'C', 4: 'D' };
+      const map = { a: 'A', b: 'B', c: 'C', d: 'D', e: 'E', 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E' };
       if (map[key]) {
         e.preventDefault();
         toggleOption(map[key]);
