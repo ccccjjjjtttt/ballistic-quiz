@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>弹道刷题器</title>
+<title>刷题器</title>
 <style>
 :root {
   --bg: #f3f6fb;
@@ -559,7 +559,7 @@ main {
 
 <header class="topbar">
   <div class="topbar-inner">
-    <div class="brand"><span class="logo">📘</span><span>弹道刷题器</span></div>
+    <div class="brand"><span class="logo">📘</span><span>刷题器</span></div>
     <div class="top-actions">
       <select id="bankSelect" aria-label="切换题库"></select>
       <button class="btn primary" id="btnImportTop">导入 Word</button>
@@ -1374,7 +1374,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $('#btnSubmit').onclick = submitAnswer;
     $('#btnNext').onclick = nextQuestion;
     $('#btnFavQuiz').onclick = () => toggleFavorite(q.id);
-    document.title = `${q.chapter} · ${typeName(q.type)} · 弹道刷题器`;
+    document.title = `${q.chapter} · ${typeName(q.type)} · 刷题器`;
   }
 
   function toggleOption(key) {
@@ -1748,7 +1748,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `弹道刷题器备份-${formatDate(Date.now())}.json`;
+    a.download = `刷题器备份-${formatDate(Date.now())}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
