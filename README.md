@@ -8,6 +8,7 @@ https://ccccjjjjtttt.github.io/ballistic-quiz/
 
 ## 说明
 
+- 本仓库只包含刷题器，不包含题库文件；首次使用请点“导入 Word”选择自己的 `.docx`。
 - 题库数据只保存在浏览器本地（localStorage），不会上传到服务器。
 - 换设备或清理浏览器缓存前，请在“题库管理”导出 JSON 备份。
 - 只支持 `.docx` 题库；旧版 `.doc` 请先另存为 `.docx`。
