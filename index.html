@@ -378,6 +378,52 @@ main {
 .explanation h4 { margin: 0 0 6px; font-size: 13px; color: var(--muted); letter-spacing: .08em; }
 .explanation p { margin: 0; line-height: 1.85; color: #1e293b; white-space: pre-wrap; }
 
+.overview { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px; }
+.overview-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+.overview-head h3 { margin: 0; font-size: 18px; }
+.overview-head .sub { color: var(--muted); font-size: 12px; margin-top: 3px; }
+.overview-legend { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 12px; }
+.overview-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.overview-legend i { font-style: normal; font-weight: 900; }
+.overview-legend .ok { color: var(--green); }
+.overview-legend .bad { color: var(--red); }
+.overview-group { margin-top: 14px; }
+.overview-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.overview-group-head b { font-size: 14px; }
+.overview-group-head span { color: var(--muted); font-size: 12px; }
+.overview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 8px; }
+.q-card {
+  position: relative;
+  min-height: 48px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--text);
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform .13s ease, border-color .13s ease, background .13s ease;
+}
+.q-card:hover { transform: translateY(-1px); border-color: #93c5fd; }
+.q-card .q-num { font-size: 14px; }
+.q-card .q-status {
+  position: absolute;
+  right: 5px;
+  bottom: 3px;
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 900;
+}
+.q-card.correct { border-color: #86efac; background: var(--green-soft); }
+.q-card.correct .q-status { color: var(--green); }
+.q-card.wrong { border-color: #fca5a5; background: var(--red-soft); }
+.q-card.wrong .q-status { color: var(--red); }
+.q-card.unanswered { background: #f8fafc; color: var(--muted); }
+.q-card.unanswered .q-status { color: #cbd5e1; }
+.q-card.correct:hover { border-color: #22c55e; }
+.q-card.wrong:hover { border-color: #ef4444; }
+.overview-tip { color: var(--muted); font-size: 12px; margin-top: 10px; }
+
 .result-card { padding: 26px; }
 .result-card h2 { margin: 0 0 8px; }
 .score-big { font-size: 52px; font-weight: 900; letter-spacing: -2px; margin: 8px 0 0; }
@@ -582,6 +628,75 @@ main {
   .manage-card { padding: 15px; }
 }
 
+
+/* 暗夜模式：跟随系统/浏览器主题 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1120;
+    --card: #111827;
+    --text: #e5e7eb;
+    --muted: #94a3b8;
+    --line: #334155;
+    --accent: #60a5fa;
+    --accent-2: #3b82f6;
+    --accent-soft: #172554;
+    --green: #4ade80;
+    --green-soft: #052e16;
+    --red: #f87171;
+    --red-soft: #450a0a;
+    --amber: #fbbf24;
+    --amber-soft: #451a03;
+    --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+  }
+  body {
+    background: radial-gradient(circle at 12% 0%, #0b1b3a 0, transparent 34%),
+                radial-gradient(circle at 100% 0%, #052e2b 0, transparent 30%),
+                var(--bg);
+    color: var(--text);
+  }
+  .topbar { background: rgba(15, 23, 42, .9); border-bottom-color: #1e293b; }
+  .top-actions select, .filters select, .search, .field input {
+    background: #0f172a; color: var(--text); border-color: var(--line);
+  }
+  .hero-stats > div, .summary-grid div, .preview-box { background: #0f172a; border-color: var(--line); }
+  .resume-bar { background: linear-gradient(135deg, #0f172a, #052e16); border-color: #1e40af; }
+  .btn { background: #0f172a; color: var(--text); border-color: var(--line); }
+  .btn:hover { background: #172033; border-color: #475569; }
+  .btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .btn.primary:hover { background: #1d4ed8; }
+  .icon-btn { background: #0f172a; border-color: var(--line); color: #94a3b8; }
+  .icon-btn:hover, .icon-btn.active { background: #451a03; border-color: #b45309; color: #fbbf24; }
+  .option { background: #0f172a; border-color: var(--line); color: var(--text); }
+  .option:hover { background: #172033; border-color: #60a5fa; }
+  .option .key { background: #1e293b; border-color: var(--line); color: #cbd5e1; }
+  .option.selected { background: #172554; border-color: #60a5fa; }
+  .option.correct { background: #052e16; border-color: #22c55e; }
+  .option.wrong { background: #450a0a; border-color: #ef4444; }
+  .option.missed { border-color: #22c55e; }
+  .feedback { background: #0f172a; border-color: var(--line); }
+  .feedback.correct { background: #052e16; border-color: #166534; }
+  .feedback.wrong { background: #450a0a; border-color: #991b1b; }
+  .answer-line, .explanation p { color: #cbd5e1; }
+  .progress { background: #1e293b; }
+  .list-item, .wrong-item, .bank-row, .q-card { background: #0f172a; border-color: var(--line); }
+  .bank-row.active { background: #172554; border-color: #1d4ed8; }
+  .q-card { color: var(--text); }
+  .q-card.correct { background: #052e16; border-color: #22c55e; color: #bbf7d0; }
+  .q-card.wrong { background: #450a0a; border-color: #ef4444; color: #fecaca; }
+  .q-card.unanswered { background: #111827; color: #94a3b8; }
+  .q-card.correct .q-status { color: #4ade80; }
+  .q-card.wrong .q-status { color: #f87171; }
+  .q-card.unanswered .q-status { color: #64748b; }
+  .overview { border-top-color: var(--line); }
+  .modal { background: #111827; color: var(--text); }
+  .modal-close { background: #1e293b; color: #cbd5e1; }
+  .modal-close:hover { background: #334155; }
+  .loading { background: rgba(11, 17, 32, .78); color: #cbd5e1; }
+  .format-box { background: #020617; }
+  .topbar, .brand { color: var(--text); }
+  .footer-note { color: #64748b; }
+}
+
 </style>
 </head>
 <body>
@@ -711,6 +826,7 @@ main {
         <button class="btn" id="btnWrongOnly">只刷错题</button>
         <button class="btn ghost" id="btnResultHome">返回首页</button>
       </div>
+      <div class="overview" id="resultOverview"></div>
       <div id="resultWrongList"></div>
     </div>
   </section>
@@ -1659,6 +1775,102 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $$('#resultWrongList [data-detail]').forEach((btn) => {
       btn.onclick = () => openDetail(btn.dataset.detail);
     });
+    renderResultOverview();
+  }
+
+  function renderResultOverview() {
+    const el = $('#resultOverview');
+    if (!el) return;
+    if (!session || !session.pool.length) {
+      el.innerHTML = '';
+      return;
+    }
+    const defs = [
+      { type: 'single', name: '单选题' },
+      { type: 'multi', name: '多选题' },
+      { type: 'judge', name: '判断题' },
+    ];
+    const groups = defs
+      .map((d) => {
+        const items = session.pool
+          .map((q, index) => ({ q, index }))
+          .filter((x) => x.q.type === d.type);
+        return { ...d, items };
+      })
+      .filter((g) => g.items.length);
+
+    const legend = `
+      <div class="overview-legend">
+        <span><i class="ok">✓</i>答对</span>
+        <span><i class="bad">✕</i>答错</span>
+        <span><i>–</i>未作答</span>
+      </div>`;
+
+    const groupHtml = groups
+      .map((g) => {
+        const correct = g.items.filter((x) => session.answersByIndex[x.index] && session.answersByIndex[x.index].correct).length;
+        const cards = g.items
+          .map((x) => {
+            const rec = session.answersByIndex[x.index];
+            let cls = 'unanswered';
+            let icon = '–';
+            let status = '未作答';
+            if (rec) {
+              cls = rec.correct ? 'correct' : 'wrong';
+              icon = rec.correct ? '✓' : '✕';
+              status = rec.correct ? '答对' : '答错';
+            }
+            return `<button class="q-card ${cls}" data-overview-index="${x.index}" title="第 ${x.index + 1} 题 · ${status}"><span class="q-num">${x.index + 1}</span><span class="q-status">${icon}</span></button>`;
+          })
+          .join('');
+        return `
+          <div class="overview-group">
+            <div class="overview-group-head"><b>${g.name}</b><span>答对 ${correct} / 共 ${g.items.length}</span></div>
+            <div class="overview-grid">${cards}</div>
+          </div>`;
+      })
+      .join('');
+
+    el.innerHTML = `
+      <div class="overview-head">
+        <div><h3>答题概览</h3><div class="sub">点击题号查看本题答案与解析</div></div>
+        ${legend}
+      </div>
+      ${groupHtml || '<div class="empty" style="padding:16px 0">暂无可统计的题目。</div>'}
+      <div class="overview-tip">绿色 ✓ 表示答对，红色 ✕ 表示答错，灰色 – 表示未作答。</div>
+    `;
+
+    el.querySelectorAll('[data-overview-index]').forEach((btn) => {
+      btn.onclick = () => openOverviewDetail(Number(btn.dataset.overviewIndex));
+    });
+  }
+
+  function openOverviewDetail(index) {
+    if (!session || !session.pool[index]) return;
+    const q = session.pool[index];
+    const rec = session.answersByIndex[index];
+    const options = q.options
+      .map((o) => {
+        const isCorrect = q.answer.includes(o.key);
+        const isUser = rec && rec.user.includes(o.key);
+        let mark = '';
+        if (isCorrect) mark += ' <span style="color:#16a34a;font-weight:800">✓ 正确</span>';
+        if (isUser && !isCorrect) mark += ' <span style="color:#dc2626;font-weight:800">✗ 你的选择</span>';
+        if (isUser && isCorrect) mark += ' <span style="color:#2563eb;font-weight:800">你的选择</span>';
+        return `<div style="margin:5px 0;line-height:1.6"><b>${o.key}.</b> ${escapeHtml(o.text)}${mark}</div>`;
+      })
+      .join('');
+    const status = !rec ? '未作答' : rec.correct ? '答对' : '答错';
+    showModal(`
+      <div class="modal-head"><h3>第 ${index + 1} 题 · ${typeName(q.type)}</h3><button class="modal-close" data-close>×</button></div>
+      <div class="list-meta">${escapeHtml(q.chapter)} · ${status}</div>
+      <div style="font-weight:700;line-height:1.8;margin:8px 0 12px">${escapeHtml(q.stem)}</div>
+      <div>${options}</div>
+      <div class="answer-line" style="margin-top:12px">正确答案：<b>${escapeHtml(answerLabel(q))}</b>　你的答案：<b>${escapeHtml(rec ? userAnswerLabel(q, rec.user) : '未作答')}</b></div>
+      <div class="explanation"><h4>解析</h4><p>${escapeHtml(q.explanation || '暂无解析')}</p></div>
+      <div class="modal-actions"><button class="btn" data-close>关闭</button></div>
+    `);
+    bindModalClose();
   }
 
   function openDetail(qid) {
