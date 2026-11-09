@@ -372,6 +372,26 @@ main {
 .feedback-title { font-weight: 800; display: flex; align-items: center; gap: 8px; font-size: 16px; }
 .feedback.correct .feedback-title { color: var(--green); }
 .feedback.wrong .feedback-title { color: var(--red); }
+.feedback.subjective-feedback { background: #f8fafc; border-color: #bfdbfe; }
+.feedback.subjective-feedback .feedback-title { color: var(--accent); }
+.subjective-wrap { margin-top: 2px; }
+.subjective-input {
+  width: 100%;
+  min-height: 170px;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text);
+  padding: 14px;
+  font: inherit;
+  line-height: 1.7;
+  outline: none;
+}
+.subjective-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37, 99, 235, .12); }
+.subjective-input:disabled { background: #f8fafc; color: #475569; }
+.subjective-hint { margin-top: 8px; color: var(--muted); font-size: 12px; }
+.subjective-yours { margin-top: 10px; font-size: 13px; color: var(--muted); line-height: 1.7; }
 .answer-line { margin-top: 8px; font-size: 14px; color: #334155; }
 .answer-line b { color: var(--text); }
 .explanation { margin-top: 12px; border-top: 1px dashed rgba(100,116,139,.28); padding-top: 12px; }
@@ -388,6 +408,7 @@ main {
 .overview-legend i { font-style: normal; font-weight: 900; }
 .overview-legend .ok { color: var(--green); }
 .overview-legend .bad { color: var(--red); }
+.overview-legend .seen { color: #3b82f6; }
 .overview-summary { display: flex; align-items: baseline; gap: 5px; margin: 4px 0 12px; color: var(--muted); font-size: 13px; }
 .overview-summary b { font-size: 22px; color: var(--text); line-height: 1; }
 .overview-summary em { font-style: normal; margin-left: 6px; }
@@ -430,6 +451,7 @@ main {
 .q-card.correct .q-status { background: #22c55e; color: #fff; }
 .q-card.wrong { border-color: #93c5fd; background: #fff; }
 .q-card.wrong .q-status { background: #ef4444; color: #fff; }
+.q-card.seen .q-status { background: #3b82f6; color: #fff; }
 .q-card.unanswered { background: #f8fafc; color: #64748b; border-color: #cbd5e1; }
 .q-card.unanswered .q-status { display: none; }
 .q-card.current { border-color: #2563eb; box-shadow: 0 0 0 2px rgba(37, 99, 235, .28); }
@@ -564,7 +586,7 @@ main {
 .modal-head h3 { margin: 0; font-size: 20px; }
 .modal-close { border: 0; background: #f1f5f9; width: 34px; height: 34px; border-radius: 9px; font-size: 18px; color: var(--muted); }
 .modal-close:hover { background: #e2e8f0; }
-.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0; }
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(64px, 1fr)); gap: 8px; margin: 12px 0; }
 .summary-grid div { background: #f8fafc; border: 1px solid var(--line); border-radius: 10px; padding: 10px; text-align: center; }
 .summary-grid b { display: block; font-size: 20px; }
 .summary-grid span { display: block; color: var(--muted); font-size: 11px; margin-top: 2px; }
@@ -709,6 +731,9 @@ main {
   .feedback { background: #0f172a; border-color: var(--line); }
   .feedback.correct { background: #052e16; border-color: #166534; }
   .feedback.wrong { background: #450a0a; border-color: #991b1b; }
+  .feedback.subjective-feedback { background: #0f172a; border-color: #1e40af; }
+  .subjective-input { background: #0f172a; color: var(--text); border-color: var(--line); }
+  .subjective-input:disabled { background: #111827; color: #94a3b8; }
   .answer-line, .explanation p { color: #cbd5e1; }
   .progress { background: #1e293b; }
   .list-item, .wrong-item, .bank-row { background: #0f172a; border-color: var(--line); }
@@ -720,6 +745,7 @@ main {
   .q-card.unanswered { background: #111827; color: #94a3b8; border-color: #334155; }
   .q-card.correct .q-status { background: #22c55e; color: #fff; }
   .q-card.wrong .q-status { background: #ef4444; color: #fff; }
+  .q-card.seen .q-status { background: #3b82f6; color: #fff; }
   .q-card.unanswered .q-status { background: #475569; color: #e2e8f0; }
   .q-card.current { border-color: #60a5fa; box-shadow: 0 0 0 2px rgba(96, 165, 250, .35); }
   .overview { border-top-color: var(--line); }
@@ -852,7 +878,7 @@ main {
         <button class="btn" id="btnNext">下一题 →</button>
       </div>
     </div>
-    <div class="footer-note">答错会自动进入错题本；点右上角 ☆ 可收藏本题。</div>
+    <div class="footer-note" id="quizFooterNote">答错会自动进入错题本；点右上角 ☆ 可收藏本题。</div>
   </section>
 
   <!-- 结果 -->
@@ -1093,17 +1119,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     let sourceIndex = 0;
 
     const chapterRe = /^第\s*\d+\s*章/;
-    const sectionRe = /^[一二三四五六七八九十]+\s*、\s*(单选题|多选题|判断题|选择题|填空题|简答题)/;
+    const sectionRe = /^[一二三四五六七八九十]+\s*、\s*(单选题|多选题|判断题|选择题|填空题|简答题|主观题|论述题)/;
     const questionRe = /^(\d+)\s*[.．、]\s*(.*)$/;
     const optionRe = /^([A-E])\s*[.．、]\s*(.*)$/;
     const answerRe = /^答案\s*[：:]\s*\[([^\]]+)\]\s*[　\s]*解析\s*[：:]\s*([\s\S]*)$/;
     const answerOnlyRe = /^答案\s*[：:]\s*(\[[^\]]+\]|[A-E√×对错]+)\s*$/;
     const explanationRe = /^解析\s*[：:]\s*([\s\S]*)$/;
+    const referenceRe = /^参考答案\s*[：:]\s*([\s\S]*)$/;
 
     function sectionType(sec) {
       if (sec.includes('多选')) return 'multi';
       if (sec.includes('判断')) return 'judge';
       if (sec.includes('单选')) return 'single';
+      if (sec.includes('主观') || sec.includes('简答') || sec.includes('论述')) return 'subjective';
       return '';
     }
 
@@ -1123,6 +1151,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         const norm = normalizeAnswer(q.answerRaw);
         q.answer = norm.answer;
         if (norm.judge) type = 'judge';
+      }
+      if (type === 'subjective') {
+        q.type = 'subjective';
+        q.options = [];
+        q.answer = [];
+        q.explanation = normalizeSpace(q.referenceAnswer || q.explanation || '');
+        if (!q.explanation) warnings.push(`第 ${q.sourceIndex} 题缺少参考答案：${q.stem.slice(0, 30)}`);
+        const hashInput = [q.chapter, q.stem, 'subjective'].join('|');
+        q.id = hashString(hashInput);
+        questions.push(q);
+        return;
       }
       if (!q.answer || !q.answer.length) {
         warnings.push(`第 ${q.sourceIndex} 题缺少答案，已跳过：${q.stem.slice(0, 30)}`);
@@ -1172,7 +1211,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         section = '';
         continue;
       }
-      if (!current && chapter === '未分类' && /(题库|复习题|练习题|试卷)/.test(line)) {
+      if (!current && chapter === '未分类' && /(题库|复习题|练习题|试卷|主观题|参考答案)/.test(line)) {
         continue;
       }
       if (sectionRe.test(line)) {
@@ -1182,6 +1221,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       }
 
       let m;
+      if ((m = line.match(referenceRe))) {
+        if (current) {
+          current.referenceAnswer = m[1] || '';
+          finish();
+        }
+        continue;
+      }
       if ((m = line.match(answerRe))) {
         if (current) {
           current.answerRaw = m[1];
@@ -1209,6 +1255,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           stem: m[2] || '',
           options: [],
           answerRaw: '',
+          referenceAnswer: '',
           explanation: '',
           sourceIndex: 0,
         };
@@ -1227,7 +1274,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     finish();
 
-    const stats = { total: questions.length, single: 0, multi: 0, judge: 0, chapters: [] };
+    const stats = { total: questions.length, single: 0, multi: 0, judge: 0, subjective: 0, chapters: [] };
     const chapterSet = new Set();
     questions.forEach((q) => {
       stats[q.type]++;
@@ -1397,15 +1444,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function typeName(t) {
-    return t === 'single' ? '单选题' : t === 'multi' ? '多选题' : '判断题';
+    return t === 'single' ? '单选题' : t === 'multi' ? '多选题' : t === 'judge' ? '判断题' : '主观题';
   }
 
   function answerLabel(q) {
+    if (q.type === 'subjective') return '参考答案见解析';
     if (q.type === 'judge') return q.answer[0] === 'T' ? '正确' : '错误';
     return q.answer.join('');
   }
 
   function userAnswerLabel(q, arr) {
+    if (q.type === 'subjective') return arr ? String(arr).slice(0, 120) : '未作答';
     if (!arr || !arr.length) return '未作答';
     if (q.type === 'judge') return arr[0] === 'T' ? '正确' : '错误';
     return arr.join('');
@@ -1635,7 +1684,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     const q = session.pool[session.index];
     const saved = session.answersByIndex[session.index];
     const draft = session.drafts[session.index];
-    selected = new Set(saved ? saved.user : draft || []);
+    const isSubjective = q.type === 'subjective';
+    selected = new Set(!isSubjective && saved ? saved.user : !isSubjective && Array.isArray(draft) ? draft : []);
     answered = !!saved;
 
     $('#qChapter').textContent = q.chapter;
@@ -1647,14 +1697,38 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $('#qFeedback').hidden = true;
     $('#qFeedback').className = 'feedback';
     $('#btnSubmit').hidden = false;
-    $('#btnSubmit').disabled = selected.size === 0;
+    $('#btnSubmit').textContent = isSubjective ? '查看参考答案' : '提交答案';
+    $('#btnSubmit').disabled = isSubjective ? false : selected.size === 0;
     $('#btnNext').hidden = false;
     $('#btnNext').textContent = session.index === session.pool.length - 1 ? '查看结果 →' : '下一题 →';
     $('#btnPrev').disabled = session.index === 0;
+    const footer = $('#quizFooterNote');
+    if (footer) footer.textContent = isSubjective ? '主观题不判对错；先默写，再对照参考答案。' : '答错会自动进入错题本；点右上角 ☆ 可收藏本题。';
     renderFavoriteButtons(q.id);
 
     const opts = $('#qOptions');
-    if (q.type === 'judge') {
+    if (isSubjective) {
+      const draftText = saved ? String(saved.user || '') : typeof draft === 'string' ? draft : '';
+      opts.innerHTML = `
+        <div class="subjective-wrap">
+          <textarea id="subjectiveInput" class="subjective-input" placeholder="在这里默写答案……" ${saved ? 'disabled' : ''}>${escapeHtml(draftText)}</textarea>
+          <div class="subjective-hint">不判对错；写完点“查看参考答案”对照。</div>
+        </div>`;
+      const ta = $('#subjectiveInput');
+      if (!saved && ta) {
+        ta.addEventListener('input', () => {
+          session.drafts[session.index] = ta.value;
+          saveSession();
+        });
+        ta.addEventListener('keydown', (e) => {
+          if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            e.preventDefault();
+            submitSubjective();
+          }
+        });
+        setTimeout(() => ta.focus(), 50);
+      }
+    } else if (q.type === 'judge') {
       opts.innerHTML = ['T', 'F']
         .map((k) => {
           const text = k === 'T' ? '✓ 正确' : '✗ 错误';
@@ -1679,13 +1753,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $('#btnFavQuiz').onclick = () => toggleFavorite(q.id);
     document.title = `${q.chapter} · ${typeName(q.type)} · 刷题器`;
 
-    if (answered) applyAnswerDisplay(q, saved.user, saved.correct);
+    if (answered) {
+      if (isSubjective) applySubjectiveAnswer(q, String(saved.user || ''));
+      else applyAnswerDisplay(q, saved.user, saved.correct);
+    }
     renderQuizOverview();
   }
 
   function toggleOption(key) {
     if (answered || !session) return;
     const q = session.pool[session.index];
+    if (q.type === 'subjective') return;
     if (q.type === 'multi') {
       if (selected.has(key)) selected.delete(key);
       else selected.add(key);
@@ -1737,8 +1815,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function submitAnswer() {
-    if (answered || !selected.size || !session) return;
+    if (answered || !session) return;
     const q = session.pool[session.index];
+    if (q.type === 'subjective') {
+      submitSubjective();
+      return;
+    }
+    if (!selected.size) return;
     const user = Array.from(selected).sort();
     const correct = sameSet(user, q.answer);
     session.answersByIndex[session.index] = { user, correct };
@@ -1749,6 +1832,48 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     applyAnswerDisplay(q, user, correct);
     renderQuizOverview();
     $('#btnNext').focus();
+  }
+
+  function submitSubjective() {
+    if (answered || !session) return;
+    const q = session.pool[session.index];
+    if (q.type !== 'subjective') return;
+    const ta = $('#subjectiveInput');
+    const text = ta ? ta.value.trim() : '';
+    session.answersByIndex[session.index] = { user: text, correct: null, subjective: true };
+    delete session.drafts[session.index];
+    session.results.push({ q, user: text, correct: null, subjective: true });
+    saveSession();
+    applySubjectiveAnswer(q, text);
+    renderQuizOverview();
+    $('#btnNext').focus();
+  }
+
+  function applySubjectiveAnswer(q, text) {
+    answered = true;
+    const ta = $('#subjectiveInput');
+    if (ta) ta.disabled = true;
+    const fb = $('#qFeedback');
+    fb.hidden = false;
+    fb.className = 'feedback subjective-feedback';
+    const fav = !!state.favorites[q.id];
+    const userHtml = text ? escapeHtml(text).replace(/\n/g, '<br>') : '<span style="color:#94a3b8">未填写</span>';
+    const refHtml = escapeHtml(q.explanation || '暂无参考答案').replace(/\n/g, '<br>');
+    fb.innerHTML = `
+      <div class="feedback-title">📝 默写对照</div>
+      <div class="subjective-yours">你的默写：${userHtml}</div>
+      <div class="explanation">
+        <h4>参考答案</h4>
+        <p>${refHtml}</p>
+      </div>
+      <div style="margin-top:12px">
+        <button class="btn small" id="btnFavFeedback">${fav ? '★ 已收藏' : '☆ 收藏本题'}</button>
+      </div>
+    `;
+    $('#btnFavFeedback').onclick = () => toggleFavorite(q.id);
+    $('#btnSubmit').hidden = true;
+    $('#btnNext').hidden = false;
+    $('#btnNext').textContent = session.index === session.pool.length - 1 ? '查看结果 →' : '下一题 →';
   }
 
   function recordAttempt(q, user, correct) {
@@ -1771,8 +1896,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
 
   function nextQuestion() {
     if (!session) return;
-    if (!answered && selected.size) {
-      if (!confirm('本题已选择但还未提交，确定跳过吗？')) return;
+    const q = session.pool[session.index];
+    const hasDraft = q && q.type === 'subjective'
+      ? !!($('#subjectiveInput') && $('#subjectiveInput').value.trim())
+      : selected.size > 0;
+    if (!answered && hasDraft) {
+      if (!confirm(q && q.type === 'subjective' ? '本题已填写但还未查看参考答案，确定跳过吗？' : '本题已选择但还未提交，确定跳过吗？')) return;
     }
     if (session.index >= session.pool.length - 1) {
       renderResult();
@@ -1791,18 +1920,30 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     }
     showView('result');
     const total = session.results.length;
-    const correct = session.results.filter((r) => r.correct).length;
-    const rate = total ? Math.round((correct / total) * 100) : 0;
-    $('#resultScore').innerHTML = `${rate}<small>分</small>`;
-    let msg = '本轮完成';
-    if (total === 0) msg = '本轮没有作答';
-    else if (rate === 100) msg = '全对，漂亮！';
-    else if (rate >= 80) msg = '不错，再巩固一下错题。';
-    else if (rate >= 60) msg = '基础还行，重点看错题解析。';
-    else msg = '别急，先把错题过一遍。';
-    $('#resultTitle').textContent = msg;
-    $('#resultMeta').textContent = `共 ${total} 题，答对 ${correct} 题，答错 ${total - correct} 题`;
-    const wrong = session.results.filter((r) => !r.correct);
+    const subjectiveResults = session.results.filter((r) => r.q.type === 'subjective');
+    const objectiveResults = session.results.filter((r) => r.q.type !== 'subjective');
+    const correct = objectiveResults.filter((r) => r.correct).length;
+    const rate = objectiveResults.length ? Math.round((correct / objectiveResults.length) * 100) : 0;
+
+    if (subjectiveResults.length && !objectiveResults.length) {
+      const poolSubjective = session.pool.filter((q) => q.type === 'subjective').length;
+      $('#resultScore').innerHTML = `${subjectiveResults.length}<small>/ ${poolSubjective} 题</small>`;
+      $('#resultTitle').textContent = '主观题练习完成';
+      $('#resultMeta').textContent = `共 ${session.pool.length} 题，已看参考答案 ${subjectiveResults.length} 题；主观题不判对错，请对照参考答案复习。`;
+    } else {
+      $('#resultScore').innerHTML = `${rate}<small>分</small>`;
+      let msg = '本轮完成';
+      if (total === 0) msg = '本轮没有作答';
+      else if (rate === 100) msg = '全对，漂亮！';
+      else if (rate >= 80) msg = '不错，再巩固一下错题。';
+      else if (rate >= 60) msg = '基础还行，重点看错题解析。';
+      else msg = '别急，先把错题过一遍。';
+      $('#resultTitle').textContent = msg;
+      $('#resultMeta').textContent = `客观题 ${objectiveResults.length} 题，答对 ${correct} 题，答错 ${objectiveResults.length - correct} 题` +
+        (subjectiveResults.length ? `；主观题 ${subjectiveResults.length} 题（不判对错）` : '');
+    }
+
+    const wrong = objectiveResults.filter((r) => r.correct === false);
     $('#resultWrongList').innerHTML = wrong.length
       ? `<h3 style="margin:18px 0 10px;font-size:16px">错题回顾</h3>` +
         wrong
@@ -1817,7 +1958,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         </div>`
           )
           .join('')
-      : '<div class="empty" style="padding:22px 0">本轮没有错题。</div>';
+      : `<div class="empty" style="padding:22px 0">${subjectiveResults.length ? '主观题不判对错，请对照参考答案复习。' : '本轮没有错题。'}</div>`;
     $$('#resultWrongList [data-detail]').forEach((btn) => {
       btn.onclick = () => openDetail(btn.dataset.detail);
     });
@@ -1825,12 +1966,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   }
 
   function buildOverviewHtml(opts) {
-    const options = opts || {};
+    opts = opts || {};
     if (!session || !session.pool.length) return '';
     const defs = [
       { type: 'single', name: '单选题' },
       { type: 'multi', name: '多选题' },
       { type: 'judge', name: '判断题' },
+      { type: 'subjective', name: '主观题' },
     ];
     const groups = defs
       .map((d) => {
@@ -1842,19 +1984,24 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       .filter((g) => g.items.length);
 
     const total = session.pool.length;
-    const correctCount = session.pool.filter((q, index) => session.answersByIndex[index] && session.answersByIndex[index].correct).length;
-    const score = total ? Math.round((correctCount / total) * 100) : 0;
+    const subjectiveCount = session.pool.filter((q) => q.type === 'subjective').length;
+    const objectiveCount = total - subjectiveCount;
+    const correctCount = session.pool.filter((q, index) => q.type !== 'subjective' && session.answersByIndex[index] && session.answersByIndex[index].correct).length;
+    const score = objectiveCount ? Math.round((correctCount / objectiveCount) * 100) : 0;
+    const subjectiveDone = session.pool.filter((q, index) => q.type === 'subjective' && session.answersByIndex[index]).length;
 
     const legend = `
       <div class="overview-legend">
-        <span><i class="ok">✓</i>答对</span>
-        <span><i class="bad">✕</i>答错</span>
+        ${objectiveCount ? '<span><i class="ok">✓</i>答对</span><span><i class="bad">✕</i>答错</span>' : ''}
+        ${subjectiveCount ? '<span><i class="seen">●</i>已看参考答案</span>' : ''}
         <span><i>–</i>未作答</span>
       </div>`;
 
     const groupHtml = groups
       .map((g) => {
+        const isSub = g.type === 'subjective';
         const correct = g.items.filter((x) => session.answersByIndex[x.index] && session.answersByIndex[x.index].correct).length;
+        const done = g.items.filter((x) => session.answersByIndex[x.index]).length;
         const cards = g.items
           .map((x) => {
             const rec = session.answersByIndex[x.index];
@@ -1862,9 +2009,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             let icon = '';
             let status = '未作答';
             if (rec) {
-              cls = rec.correct ? 'correct' : 'wrong';
-              icon = rec.correct ? '✓' : '✕';
-              status = rec.correct ? '答对' : '答错';
+              if (isSub || rec.subjective) {
+                cls = 'seen';
+                icon = '●';
+                status = '已看参考答案';
+              } else {
+                cls = rec.correct ? 'correct' : 'wrong';
+                icon = rec.correct ? '✓' : '✕';
+                status = rec.correct ? '答对' : '答错';
+              }
             }
             const current = opts.currentIndex === x.index ? ' current' : '';
             return `<button class="q-card ${cls}${current}" data-overview-index="${x.index}" title="第 ${x.index + 1} 题 · ${status}"><span class="q-num">${x.index + 1}</span><span class="q-status">${icon}</span></button>`;
@@ -1872,20 +2025,29 @@ https://github.com/nodeca/pako/blob/main/LICENSE
           .join('');
         return `
           <div class="overview-group">
-            <div class="overview-group-head"><b>${g.name}</b><span>答对 ${correct} / 共 ${g.items.length}</span></div>
+            <div class="overview-group-head"><b>${g.name}</b><span>${isSub ? `已完成 ${done}` : `答对 ${correct}`} / 共 ${g.items.length}</span></div>
             <div class="overview-grid">${cards}</div>
           </div>`;
       })
       .join('');
+
+    let summaryHtml;
+    if (objectiveCount && subjectiveCount) {
+      summaryHtml = `<div class="overview-summary"><span>客观题</span><b>${score}</b><span>/100分</span><em>共${objectiveCount}题 · 主观题${subjectiveCount}题</em></div>`;
+    } else if (objectiveCount) {
+      summaryHtml = `<div class="overview-summary"><span>客观题</span><b>${score}</b><span>/100分</span><em>共${objectiveCount}题</em></div>`;
+    } else {
+      summaryHtml = `<div class="overview-summary"><span>主观题</span><b>${subjectiveDone}</b><span>/ ${subjectiveCount} 题已看</span><em>不判对错</em></div>`;
+    }
 
     return `
       <div class="overview-head">
         <div><h3>${opts.title || '答题概览'}</h3><div class="sub">${opts.sub || '点击题号查看本题答案与解析'}</div></div>
         <div class="overview-head-right">${legend}${opts.action || ''}</div>
       </div>
-      <div class="overview-summary"><span>客观题</span><b>${score}</b><span>/100分</span><em>共${total}题</em></div>
+      ${summaryHtml}
       ${groupHtml || '<div class="empty" style="padding:16px 0">暂无可统计的题目。</div>'}
-      <div class="overview-tip">${opts.tip || '绿色 ✓ 表示答对，红色 ✕ 表示答错，灰色 – 表示未作答。'}</div>
+      <div class="overview-tip">${opts.tip || '绿色 ✓ 表示答对，红色 ✕ 表示答错，蓝色 ● 表示已看主观题参考答案，灰色 – 表示未作答。'}</div>
     `;
   }
 
@@ -1943,6 +2105,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     if (!session || !session.pool[index]) return;
     const q = session.pool[index];
     const rec = session.answersByIndex[index];
+    if (q.type === 'subjective') {
+      const userText = rec && rec.user ? escapeHtml(String(rec.user)).replace(/\n/g, '<br>') : '<span style="color:#94a3b8">未填写</span>';
+      showModal(`
+        <div class="modal-head"><h3>第 ${index + 1} 题 · 主观题</h3><button class="modal-close" data-close>×</button></div>
+        <div class="list-meta">${escapeHtml(q.chapter)} · ${rec ? '已看参考答案' : '未作答'}</div>
+        <div style="font-weight:700;line-height:1.8;margin:8px 0 12px">${escapeHtml(q.stem)}</div>
+        <div class="subjective-yours">你的默写：${userText}</div>
+        <div class="explanation"><h4>参考答案</h4><p>${escapeHtml(q.explanation || '暂无参考答案').replace(/\n/g, '<br>')}</p></div>
+        <div class="modal-actions"><button class="btn" data-close>关闭</button></div>
+      `);
+      bindModalClose();
+      return;
+    }
     const options = q.options
       .map((o) => {
         const isCorrect = q.answer.includes(o.key);
@@ -1970,6 +2145,17 @@ https://github.com/nodeca/pako/blob/main/LICENSE
   function openDetail(qid) {
     const q = findQuestion(qid);
     if (!q) return;
+    if (q.type === 'subjective') {
+      showModal(`
+        <div class="modal-head"><h3>题目详情</h3><button class="modal-close" data-close>×</button></div>
+        <div class="list-meta">${escapeHtml(q.chapter)} · 主观题</div>
+        <div style="font-weight:700;line-height:1.8;margin:8px 0 12px">${escapeHtml(q.stem)}</div>
+        <div class="explanation"><h4>参考答案</h4><p>${escapeHtml(q.explanation || '暂无参考答案').replace(/\n/g, '<br>')}</p></div>
+        <div class="modal-actions"><button class="btn" data-close>关闭</button></div>
+      `);
+      bindModalClose();
+      return;
+    }
     const options = q.options
       .map((o) => `<div style="margin:4px 0"><b>${o.key}.</b> ${escapeHtml(o.text)}${q.answer.includes(o.key) ? ' <span style="color:#15803d;font-weight:800">✓</span>' : ''}</div>`)
       .join('');
@@ -2127,8 +2313,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
       <div class="preview-box">
         <div style="color:#64748b;font-size:12px">${escapeHtml(q.chapter)} · ${typeName(q.type)}</div>
         <div style="font-weight:700;margin:3px 0">${i + 1}. ${escapeHtml(q.stem)}</div>
-        <div>${q.options.map((o) => `<div>${o.key}. ${escapeHtml(o.text)}</div>`).join('')}</div>
-        <div style="margin-top:4px">答案：<b style="color:#15803d">${escapeHtml(answerLabel(q))}</b></div>
+        ${q.type === 'subjective'
+          ? `<div style="margin-top:4px;color:#64748b">参考答案：${escapeHtml((q.explanation || '').slice(0, 90))}${(q.explanation || '').length > 90 ? '……' : ''}</div>`
+          : `<div>${q.options.map((o) => `<div>${o.key}. ${escapeHtml(o.text)}</div>`).join('')}</div>
+             <div style="margin-top:4px">答案：<b style="color:#15803d">${escapeHtml(answerLabel(q))}</b></div>`}
       </div>`
       )
       .join('');
@@ -2140,6 +2328,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         <div><b>${result.stats.single}</b><span>单选题</span></div>
         <div><b>${result.stats.multi}</b><span>多选题</span></div>
         <div><b>${result.stats.judge}</b><span>判断题</span></div>
+        <div><b>${result.stats.subjective || 0}</b><span>主观题</span></div>
       </div>
       <div style="color:#64748b;font-size:12px;margin:6px 0">共 ${result.stats.chapters.length} 个章节：${escapeHtml(result.stats.chapters.slice(0, 8).join('、'))}${result.stats.chapters.length > 8 ? '……' : ''}</div>
       ${warns}
@@ -2387,7 +2576,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     };
     $('#btnWrongOnly').onclick = () => {
       if (!session) return;
-      const wrong = session.results.filter((r) => !r.correct).map((r) => r.q);
+      const wrong = session.results.filter((r) => r.correct === false).map((r) => r.q);
       startSessionWithPool(wrong, 'wrong', '只刷错题');
     };
     $('#btnStartFav').onclick = () => {
