@@ -287,6 +287,7 @@ main {
 
 .question-card { padding: 24px; }
 .question-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.edit-question { margin-left: auto; align-self: center; font-size: 12px; }
 .pill {
   display: inline-flex;
   align-items: center;
@@ -594,7 +595,14 @@ main {
 .preview-box { border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-top: 10px; background: #f8fafc; font-size: 13px; line-height: 1.7; }
 .field { margin: 12px 0; }
 .field label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 5px; }
-.field input { width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; }
+.field input, .field textarea, .field select { width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; background: #fff; color: var(--text); font: inherit; }
+.field textarea { min-height: 90px; resize: vertical; line-height: 1.6; }
+.field select { appearance: auto; }
+.edit-option-row { display: flex; gap: 8px; align-items: center; margin: 6px 0; }
+.edit-option-row .opt-key { flex: 0 0 34px; height: 34px; display: grid; place-items: center; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-weight: 800; }
+.edit-option-row input { flex: 1; }
+.edit-option-row .opt-del { flex: 0 0 auto; }
+.edit-hint { color: var(--muted); font-size: 12px; margin-top: 4px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
 
 .toast {
@@ -710,7 +718,7 @@ main {
     color: var(--text);
   }
   .topbar { background: rgba(15, 23, 42, .9); border-bottom-color: #1e293b; }
-  .top-actions select, .filters select, .search, .field input {
+  .top-actions select, .filters select, .search, .field input, .field textarea, .field select {
     background: #0f172a; color: var(--text); border-color: var(--line);
   }
   .hero-stats > div, .summary-grid div, .preview-box { background: #0f172a; border-color: var(--line); }
@@ -868,6 +876,7 @@ main {
       <div class="question-meta">
         <span class="pill" id="qChapter">章节</span>
         <span class="pill gray" id="qType">题型</span>
+        <button class="link-btn edit-question" id="btnEditQuestion" type="button">✎ 编辑本题</button>
       </div>
       <h2 id="qStem">题干</h2>
       <div class="options" id="qOptions"></div>
@@ -2218,6 +2227,169 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     renderQuestionList($('#wrongList'), list, '还没有错题。答错的题会自动进入这里。');
   }
 
+  function openEditQuestion() {
+    if (!session) return;
+    const q = session.pool[session.index];
+    if (!q) return;
+    const isSubjective = q.type === 'subjective';
+    const isJudge = q.type === 'judge';
+    const optionsHtml = isSubjective
+      ? ''
+      : isJudge
+        ? `<div class="field"><label>正确答案</label>
+             <select id="editJudge">
+               <option value="T" ${q.answer[0] === 'T' ? 'selected' : ''}>正确</option>
+               <option value="F" ${q.answer[0] === 'F' ? 'selected' : ''}>错误</option>
+             </select>
+           </div>`
+        : `<div class="field"><label>选项</label>
+             <div id="editOptions"></div>
+             <button class="btn small" id="btnAddOption" type="button" style="margin-top:6px">+ 添加选项</button>
+             <div class="edit-hint">最多 A–E；删除后选项会自动重新编号。</div>
+           </div>
+           <div class="field"><label>正确答案</label>
+             <input id="editAnswer" value="${escapeHtml(q.answer.join(''))}" placeholder="单选如 B，多选如 ABC">
+             <div class="edit-hint">只填字母，例如 ABC；不要加括号。</div>
+           </div>`;
+
+    showModal(`
+      <div class="modal-head"><h3>编辑本题</h3><button class="modal-close" data-close>×</button></div>
+      <div class="list-meta">${escapeHtml(q.chapter)} · ${typeName(q.type)} · 保存后只修改本地题库</div>
+      <div class="field"><label>题干</label><textarea id="editStem">${escapeHtml(q.stem)}</textarea></div>
+      ${optionsHtml}
+      <div class="field"><label>${isSubjective ? '参考答案' : '解析'}</label><textarea id="editExplanation">${escapeHtml(q.explanation || '')}</textarea></div>
+      <div class="modal-actions">
+        <button class="btn" data-close>取消</button>
+        <button class="btn primary" id="btnSaveEdit">保存修改</button>
+      </div>
+    `);
+    bindModalClose();
+
+    if (!isSubjective && !isJudge) {
+      let options = q.options.map((o) => ({ key: o.key, text: o.text }));
+      const sync = () => {
+        $$('#editOptions .edit-option-row').forEach((row) => {
+          const item = options.find((o) => o.key === row.dataset.key);
+          if (item) item.text = row.querySelector('input').value;
+        });
+      };
+      const paint = () => {
+        const wrap = $('#editOptions');
+        if (!wrap) return;
+        wrap.innerHTML = options
+          .map(
+            (o) => `<div class="edit-option-row" data-key="${o.key}">
+              <span class="opt-key">${o.key}</span>
+              <input class="opt-text" value="${escapeHtml(o.text)}" placeholder="选项内容">
+              <button class="btn small opt-del" type="button" data-del="${o.key}" title="删除选项">删</button>
+            </div>`
+          )
+          .join('');
+        wrap.querySelectorAll('[data-del]').forEach((btn) => {
+          btn.onclick = () => {
+            if (options.length <= 2) {
+              toast('至少保留两个选项。', 'bad');
+              return;
+            }
+            sync();
+            options = options.filter((o) => o.key !== btn.dataset.del);
+            options.forEach((o, i) => (o.key = String.fromCharCode(65 + i)));
+            paint();
+          };
+        });
+      };
+      paint();
+      const add = $('#btnAddOption');
+      if (add) add.onclick = () => {
+        if (options.length >= 5) {
+          toast('最多支持 A–E 五个选项。', 'bad');
+          return;
+        }
+        sync();
+        options.push({ key: String.fromCharCode(65 + options.length), text: '' });
+        paint();
+      };
+    }
+
+    $('#btnSaveEdit').onclick = saveEditedQuestion;
+  }
+
+  function saveEditedQuestion() {
+    if (!session) return;
+    const q = session.pool[session.index];
+    if (!q) return;
+    if (answered && !confirm('本题已作答，保存修改后会清除本题作答记录，需要重新作答。继续吗？')) return;
+
+    const stem = ($('#editStem') ? $('#editStem').value : '').trim();
+    if (!stem) {
+      toast('题干不能为空。', 'bad');
+      return;
+    }
+    const explanation = ($('#editExplanation') ? $('#editExplanation').value : '').trim();
+
+    if (q.type === 'subjective') {
+      q.stem = stem;
+      q.explanation = explanation;
+      q.referenceAnswer = explanation;
+      q.options = [];
+      q.answer = [];
+    } else if (q.type === 'judge') {
+      q.stem = stem;
+      q.answer = [$('#editJudge').value === 'F' ? 'F' : 'T'];
+      q.options = [
+        { key: 'T', text: '正确' },
+        { key: 'F', text: '错误' },
+      ];
+      q.explanation = explanation;
+    } else {
+      const rows = $$('#editOptions .edit-option-row');
+      const newOptions = rows.map((row) => ({
+        key: row.dataset.key,
+        text: (row.querySelector('input').value || '').trim(),
+      }));
+      if (newOptions.length < 2) {
+        toast('至少需要两个选项。', 'bad');
+        return;
+      }
+      if (newOptions.some((o) => !o.text)) {
+        toast('选项内容不能为空。', 'bad');
+        return;
+      }
+      const raw = ($('#editAnswer') ? $('#editAnswer').value : '').toUpperCase().replace(/[^A-E]/g, '');
+      const answer = Array.from(new Set(raw.split(''))).sort();
+      if (!answer.length) {
+        toast('请填写正确答案，例如 B 或 ABC。', 'bad');
+        return;
+      }
+      if (q.type === 'single' && answer.length !== 1) {
+        toast('单选题只能有一个正确答案。', 'bad');
+        return;
+      }
+      const keys = new Set(newOptions.map((o) => o.key));
+      if (answer.some((a) => !keys.has(a))) {
+        toast('答案字母必须对应现有选项。', 'bad');
+        return;
+      }
+      q.stem = stem;
+      q.options = newOptions;
+      q.answer = answer;
+      q.explanation = explanation;
+    }
+
+    q.editedAt = Date.now();
+    delete state.attempts[q.id];
+    delete session.answersByIndex[session.index];
+    delete session.drafts[session.index];
+    session.results = session.results.filter((r) => r.q.id !== q.id);
+    saveState();
+    saveSession();
+    closeModal();
+    answered = false;
+    selected = new Set();
+    renderQuestion();
+    toast('已保存到本地题库；Word 文件不变。', 'good');
+  }
+
   function renderQuestionList(container, list, emptyText) {
     const search = (currentView === 'favorites' ? $('#favSearch').value : $('#wrongSearch').value || '').trim().toLowerCase();
     const filtered = search ? list.filter((q) => q.stem.toLowerCase().includes(search) || q.chapter.toLowerCase().includes(search)) : list;
@@ -2560,6 +2732,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     $('#btnFavQuiz').onclick = () => {
       if (session && session.pool[session.index]) toggleFavorite(session.pool[session.index].id);
     };
+    $('#btnEditQuestion').onclick = openEditQuestion;
     $$('.js-home').forEach((btn) => (btn.onclick = () => showView('home')));
     $('#btnResultHome').onclick = () => showView('home');
     $('#btnRetry').onclick = () => {
